@@ -15,13 +15,9 @@ class HeatModel:
     def __init__(self,n):
         self.n = n
         
-        print()
-    
-    
-    # def __init__(self):
     def create_large_diagonal_matrix(self)->np.ndarray:
         """
-        
+        This function generates B from the assignment document
 
         Parameters
         ----------
