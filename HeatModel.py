@@ -9,6 +9,7 @@ Created on Sat Oct 26 10:28:29 2024
 from scipy import sparse
 import numpy as np
 import sys
+import seaborn as sns
 
 
 class HeatModel:
@@ -17,7 +18,7 @@ class HeatModel:
         self.size = size
 
         self.designMatrix = self.create_Model()
-
+ 
     def create_diagonal_matrix(self, diagonalElement, offDiagonalElement):
         """
 
@@ -123,3 +124,15 @@ class HeatModel:
             np.ones((self.size * self.size) - self.size), -self.size)
 
         return finalMatrix
+
+    def visualize(self):
+        """
+        Simple function that converts the sparse matrix back to a dense matrix and visualizes the matrix as a heatmap with the seaborn library
+
+        To use, just call self.visualize()
+        """
+        # Convert the sparse matrix back into a normal matrix
+        matrix = self.designMatrix.todense()
+
+        # Show the matrix as a heatmap using seaborn
+        return sns.heatmap(matrix);
