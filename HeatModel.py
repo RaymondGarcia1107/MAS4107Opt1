@@ -127,7 +127,8 @@ class HeatModel:
 
     def visualize(self):
         """
-        Simple function that converts the sparse matrix back to a dense matrix and visualizes the matrix as a heatmap with the seaborn library
+        Simple function that converts the sparse matrix back to a dense matrix and 
+        returns a heatmap of the design matrix with the seaborn library
 
         To use, just call self.visualize()
         """
@@ -135,4 +136,4 @@ class HeatModel:
         matrix = self.designMatrix.todense()
 
         # Show the matrix as a heatmap using seaborn
-        return sns.heatmap(matrix);
+        return sns.heatmap(matrix)
