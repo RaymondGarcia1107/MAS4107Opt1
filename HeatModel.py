@@ -130,10 +130,23 @@ class HeatModel:
         Simple function that converts the sparse matrix back to a dense matrix and 
         returns a heatmap of the design matrix with the seaborn library
 
-        To use, just call self.visualize()
+        Returns
+        ------
+        matplotlib axes
+
+        To use
+            plot = self.visualize()
+            plot.show()
+
+        OR
+
+        In a notebook
+            self.visualize()
         """
         # Convert the sparse matrix back into a normal matrix
         matrix = self.designMatrix.todense()
 
         # Show the matrix as a heatmap using seaborn
-        return sns.heatmap(matrix)
+        plot = sns.heatmap(matrix)
+        plot.set_title("Visual Representation of Design Matrix")
+        return plot
