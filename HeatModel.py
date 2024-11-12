@@ -18,6 +18,8 @@ class HeatModel:
         self.size = size
 
         self.designMatrix = self.create_Model()
+
+        self.b = self.constructVectorB()
  
     def create_diagonal_matrix(self, diagonalElement, offDiagonalElement):
         """
@@ -125,6 +127,34 @@ class HeatModel:
 
         return finalMatrix
 
+    def constructVectorB(self):
+        """
+        
+        
+        Returns
+        -------
+        A vector size n^2 x 1
+            Used as the target vector for Ax = b when solving for Jacobian and GaussSeidel.
+
+            b = [[-100],
+                [0],
+                [-100]
+                [-100],
+                [0],
+                [-100]
+                [-100],
+                [0],
+                [-100]] when self.size = 3
+        """
+        matrix = np.zeros((self.size, self.size))
+
+        for i in range(self.size):
+            matrix[0,i] = -100
+            matrix[-1,i] = -100
+        
+        return matrix.T.flatten().reshape(-1,1)
+        
+
     def visualize(self):
         """
         Simple function that converts the sparse matrix back to a dense matrix and 
@@ -150,3 +180,7 @@ class HeatModel:
         plot = sns.heatmap(matrix)
         plot.set_title("Visual Representation of Design Matrix")
         return plot
+
+    def GaussSeidel(self, nIter = 100, tol = 10e-8):
+        
+        x = np.zeros(self.size**2)
