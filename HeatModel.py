@@ -9,6 +9,7 @@ Created on Sat Oct 26 10:28:29 2024
 from scipy import sparse
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
 import seaborn as sns
 
 
@@ -155,7 +156,7 @@ class HeatModel:
         return matrix.T.flatten().reshape(-1,1)
         
 
-    def visualize(self):
+    def visualizeModelDesign(self):
         """
         Simple function that converts the sparse matrix back to a dense matrix and 
         returns a heatmap of the design matrix with the seaborn library
@@ -177,9 +178,21 @@ class HeatModel:
         matrix = self.designMatrix.todense()
 
         # Show the matrix as a heatmap using seaborn
-        plot = sns.heatmap(matrix)
-        plot.set_title("Visual Representation of Design Matrix")
-        return plot
+        fig, (ax, ax_bar) = plt.subplots(figsize = (12,8),
+                                         ncols = 2,
+                                         constrained_layout = True, 
+                                         gridspec_kw = {"width_ratios": [0.8,0.2]})
+        
+        sns.heatmap(matrix, ax = ax)
+        ax.set_title("Design Matrix")
+
+        sns.heatmap(self.b, ax = ax_bar)
+        ax_bar.set_title("Vector b")
+
+        fig.suptitle("Visual Representation of Design Matrix and Vector b",
+                     fontsize = "xx-large")
+
+        return fig
 
     def GaussSeidel(self, nIter = 100, tol = 10e-8):
         
