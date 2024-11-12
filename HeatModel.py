@@ -196,4 +196,30 @@ class HeatModel:
 
     def GaussSeidel(self, nIter = 100, tol = 10e-8):
         
-        x = np.zeros(self.size**2)
+        x = np.ones(self.size**2)
+        x1 = np.ones(self.size**2)
+        A = self.designMatrix
+        b = self.b
+        count = 0
+        tols = []
+
+        for i in range(nIter):
+
+            for i in range(x.shape[0]):
+                # the next 3 lines are from the book and don't work.
+                rowstart = A.indptr[i]
+                rowend = A.indptr[i+1]
+                Aix = A.data[rowstart:rowend] @ x[A.indices[rowstart:rowend]]
+
+                x1[i] = x[i] + ( (b[i] - Aix) / A[i,i] )
+
+                x = np.copy(x1)
+            x_x1 = x - x1
+            diff = np.linalg.norm(x_x1)
+            tols.append(diff)
+            count +=1
+
+            if diff < tol:
+                break
+
+        return x1, count, tols
