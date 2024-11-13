@@ -190,10 +190,11 @@ class HeatModel:
         sns.heatmap(matrix, ax = ax)
         ax.set_title("Design Matrix")
 
-        # 
+        # Creating a visual representation of the vector b
         sns.heatmap(self.b, ax = ax_bar)
         ax_bar.set_title("Vector b")
 
+        # Adding a title to the figure
         fig.suptitle("Visual Representation of Design Matrix and Vector b",
                      fontsize = "xx-large")
 
@@ -201,23 +202,36 @@ class HeatModel:
 
     def GaussSeidel(self, nIter = 100, tol = 1e-8):
         
+        # Starting with an initial vector of ones
         x = np.ones(self.size**2)
-        x1 = np.ones(self.size**2)
+        # Creating a copy for future iterations
+        x1 = np.copy(x)
+        # Storing the design matrix and vector b from the class constructor
         A = self.designMatrix
         b = self.b
+
+        # Storing the Diagonals in A for easier access later
+        diags = A.diagonal()
+        
+        # Initializing a counter and a loss array
         count = 0
         tols = []
 
+        # Beginning outer loop of nIters
         for i in range(nIter):
 
+            # Inner loop to generate x_k+1
             for i in range(x.shape[0]):
-                # the next 3 lines are from the book and don't work.
+                # Slicing through the sparse matrix for non zero values
                 rowstart = A.indptr[i]
                 rowend = A.indptr[i+1]
+                # Taking A[i].T @ x
                 Aix = A.data[rowstart:rowend] @ x[A.indices[rowstart:rowend]]
 
-                x1[i] = x[i] + ( (b[i] - Aix) / A[i,i] )
+                # Generating each element for x_k+1
+                x1[i] = x[i] + ( (b[i] - Aix) / diags[i] )
 
+            # Calculating the difference 
             x_x1 = x - x1
             x = np.copy(x1)
             diff = np.linalg.norm(x_x1)
