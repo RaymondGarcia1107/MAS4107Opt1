@@ -9,6 +9,8 @@ Created on Sat Oct 26 10:28:29 2024
 from scipy import sparse
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 class HeatModel:
@@ -18,6 +20,8 @@ class HeatModel:
 
         self.designMatrix = self.create_Model()
 
+        self.b = self.constructVectorB()
+ 
     def create_diagonal_matrix(self, diagonalElement, offDiagonalElement):
         """
 
@@ -123,3 +127,99 @@ class HeatModel:
             np.ones((self.size * self.size) - self.size), -self.size)
 
         return finalMatrix
+
+    def constructVectorB(self):
+        """
+        
+        
+        Returns
+        -------
+        A vector size n^2 x 1
+            Used as the target vector for Ax = b when solving for Jacobian and GaussSeidel.
+
+            b = [[-100],
+                [0],
+                [-100]
+                [-100],
+                [0],
+                [-100]
+                [-100],
+                [0],
+                [-100]] when self.size = 3
+        """
+        matrix = np.zeros((self.size, self.size))
+
+        for i in range(self.size):
+            matrix[0,i] = -100
+            matrix[-1,i] = -100
+        
+        return matrix.T.flatten().reshape(-1,1)
+        
+
+    def visualizeModelDesign(self):
+        """
+        Simple function that converts the sparse matrix back to a dense matrix and 
+        returns a heatmap of the design matrix with the seaborn library
+
+        Returns
+        ------
+        matplotlib axes
+
+        To use
+            plot = self.visualize()
+            plot.show()
+
+        OR
+
+        In a notebook
+            self.visualize()
+        """
+        # Convert the sparse matrix back into a normal matrix
+        matrix = self.designMatrix.todense()
+
+        # Show the matrix as a heatmap using seaborn
+        fig, (ax, ax_bar) = plt.subplots(figsize = (12,8),
+                                         ncols = 2,
+                                         constrained_layout = True, 
+                                         gridspec_kw = {"width_ratios": [0.8,0.2]})
+        
+        sns.heatmap(matrix, ax = ax)
+        ax.set_title("Design Matrix")
+
+        sns.heatmap(self.b, ax = ax_bar)
+        ax_bar.set_title("Vector b")
+
+        fig.suptitle("Visual Representation of Design Matrix and Vector b",
+                     fontsize = "xx-large")
+
+        return fig
+
+    def GaussSeidel(self, nIter = 100, tol = 10e-8):
+        
+        x = np.ones(self.size**2)
+        x1 = np.ones(self.size**2)
+        A = self.designMatrix
+        b = self.b
+        count = 0
+        tols = []
+
+        for i in range(nIter):
+
+            for i in range(x.shape[0]):
+                # the next 3 lines are from the book and don't work.
+                rowstart = A.indptr[i]
+                rowend = A.indptr[i+1]
+                Aix = A.data[rowstart:rowend] @ x[A.indices[rowstart:rowend]]
+
+                x1[i] = x[i] + ( (b[i] - Aix) / A[i,i] )
+
+                x = np.copy(x1)
+            x_x1 = x - x1
+            diff = np.linalg.norm(x_x1)
+            tols.append(diff)
+            count +=1
+
+            if diff < tol:
+                break
+
+        return x1, count, tols
