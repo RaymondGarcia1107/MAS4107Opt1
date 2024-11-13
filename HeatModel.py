@@ -18,7 +18,7 @@ class HeatModel:
     def __init__(self, size):
         self.size = size
 
-        self.designMatrix = self.create_Model()
+        self.designMatrix = self.create_Model().tocsr()
 
         self.b = self.constructVectorB()
  
@@ -147,12 +147,15 @@ class HeatModel:
                 [0],
                 [-100]] when self.size = 3
         """
+        # Constructing a matrix of zeros size n x n
         matrix = np.zeros((self.size, self.size))
 
+        # Changing the top and bottom row values to -100
         for i in range(self.size):
             matrix[0,i] = -100
             matrix[-1,i] = -100
         
+        # Flattening the matrix into a column vector
         return matrix.T.flatten().reshape(-1,1)
         
 
@@ -177,15 +180,17 @@ class HeatModel:
         # Convert the sparse matrix back into a normal matrix
         matrix = self.designMatrix.todense()
 
-        # Show the matrix as a heatmap using seaborn
+        # Constructing two subplots for the final plot
         fig, (ax, ax_bar) = plt.subplots(figsize = (12,8),
                                          ncols = 2,
                                          constrained_layout = True, 
                                          gridspec_kw = {"width_ratios": [0.8,0.2]})
         
+        # Creating a heatmap of the design matrix
         sns.heatmap(matrix, ax = ax)
         ax.set_title("Design Matrix")
 
+        # 
         sns.heatmap(self.b, ax = ax_bar)
         ax_bar.set_title("Vector b")
 
@@ -194,7 +199,7 @@ class HeatModel:
 
         return fig
 
-    def GaussSeidel(self, nIter = 100, tol = 10e-8):
+    def GaussSeidel(self, nIter = 100, tol = 1e-8):
         
         x = np.ones(self.size**2)
         x1 = np.ones(self.size**2)
@@ -213,8 +218,8 @@ class HeatModel:
 
                 x1[i] = x[i] + ( (b[i] - Aix) / A[i,i] )
 
-                x = np.copy(x1)
             x_x1 = x - x1
+            x = np.copy(x1)
             diff = np.linalg.norm(x_x1)
             tols.append(diff)
             count +=1
