@@ -200,7 +200,7 @@ class HeatModel:
 
         return fig
 
-    def GaussSeidel(self, nIter = 100, tol = 1e-8):
+    def GaussSeidel(self, nIter = 100, tol = 1e-8, stop = True):
         
         # Starting with an initial vector of ones
         x = np.ones(self.size**2)
@@ -215,30 +215,41 @@ class HeatModel:
         
         # Initializing a counter and a loss array
         count = 0
-        tols = []
+        tols = np.zeros((2,nIter))
 
         # Beginning outer loop of nIters
         for i in range(nIter):
 
             # Inner loop to generate x_k+1
-            for i in range(x.shape[0]):
+            for j in range(x.shape[0]):
                 # Slicing through the sparse matrix for non zero values
-                rowstart = A.indptr[i]
-                rowend = A.indptr[i+1]
-                # Taking A[i].T @ x
-                Aix = A.data[rowstart:rowend] @ x[A.indices[rowstart:rowend]]
+                rowstart = A.indptr[j]
+                rowend = A.indptr[j+1]
+                # Taking A[j].T @ x
+                Ajx = A.data[rowstart:rowend] @ x[A.indices[rowstart:rowend]]
 
                 # Generating each element for x_k+1
-                x1[i] = x[i] + ( (b[i] - Aix) / diags[i] )
+                x1[j] = x[j] + ( (b[j] - Ajx) / diags[j] )
 
-            # Calculating the difference 
-            x_x1 = x - x1
-            x = np.copy(x1)
-            diff = np.linalg.norm(x_x1)
-            tols.append(diff)
+            # Calculating the difference between the prior and current approximation 
+            x_x1 = x1 - x
+
+            # Calculating and appending the normalized max norm
+            infNorm = np.linalg.norm(x_x1, ord = np.inf) / np.linalg.norm(x1, ord = np.inf)
+            tols[0,i] = infNorm
+
+            # Calculating and appending the normalized l2 norm
+            l2Norm = np.linalg.norm(x_x1) / np.linalg.norm(x1)
+            tols[1,i] = l2Norm
+
+            # Incrementing count
             count +=1
 
-            if diff < tol:
-                break
+            # Copying the current into the prior for the next iteration
+            x = np.copy(x1)
+
+            if stop:
+                if infNorm < tol:
+                    break
 
         return x1, count, tols
