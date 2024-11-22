@@ -270,30 +270,24 @@ class HeatModel:
         """
         # Retrieve the system matrix A representing coefficients in Ax = b.
         A = self.designMatrix
-
         # Flatten the right-hand side vector b to ensure it is a 1D array for calculations.
         b = self.b.flatten()
-
         # Determine the number of variables/equations in the system.
         n = len(b)
-
         # Initialize the solution vector x with zeros as the initial guess.
         # In the Jacobi method, the initial guess can be any vector; zeros are commonly used.
         x = np.zeros(n)
 
         # Extract the diagonal elements of matrix A.
         diag = A.diagonal()
-
         # Compute the inverse of the diagonal elements (D^-1), where D is the diagonal matrix of A.
         # This will be used to isolate x in the iteration formula.
         inv_diag = 1.0 / diag
 
         # Initialize a list to store the residual errors at each iteration.
         errors = []
-
         # Initialize an array to store the convergence tolerances (infinity norm and L2 norm) for each iteration.
         tols = np.zeros((2, maxiter))
-
         # Initialize the iteration counter.
         count = 0
 
@@ -303,7 +297,6 @@ class HeatModel:
             Ax = A @ x
             # Update the solution vector x using the Jacobi iteration formula:
             # x_new = x + D^-1 * (b - A * x)
-            # This computes the next approximation x1 based on the residual (b - A * x).
             x1 = x + inv_diag * (b - Ax)
 
             # Calculate the residual error as the infinity norm of (A * x1 - b).
@@ -319,14 +312,12 @@ class HeatModel:
             # This measures the maximum relative change in the solution vector.
             # The small epsilon (1e-10) prevents division by zero.
             infNorm = np.linalg.norm(x1_x, ord=np.inf) / (np.linalg.norm(x1, ord=np.inf) + 1e-10)
-
             # Store the infinity norm in the 'tols' array for convergence analysis.
             tols[0, i] = infNorm
 
             # Calculate the normalized L2 norm of the difference between iterations.
             # This provides an overall measure of convergence across all variables.
             l2Norm = np.linalg.norm(x1_x) / (np.linalg.norm(x1) + 1e-10)
-
             # Store the L2 norm in the 'tols' array.
             tols[1, i] = l2Norm
 
@@ -346,7 +337,7 @@ class HeatModel:
         # return the last computed solution and associated iterCOUNT and tolerances.
         return x1, count, tols[:, :count], errors
 
-    def visualize_heat_distribution(self, U, title='Heat Distribution', initempTop=0, initempBottom=0, initempLeft=100,
+    def visualizeHeatDistribution(self, U, title='Heat Distribution', initempTop=0, initempBottom=0, initempLeft=100,
                                     initempRight=100):
         """
         Visualizes the heat distribution as a heatmap.
