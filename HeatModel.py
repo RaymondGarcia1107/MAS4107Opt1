@@ -254,7 +254,7 @@ class HeatModel:
 
         return x1, count, tols
 
-    def solveJacobi(self, tol=1e-8, maxiter=100):
+    def solveJacobi(self, tol=1e-8, maxiter=100, stop = True):
         """
         Solves the linear system Ax = b using the Jacobi iterative method.
 
@@ -324,11 +324,12 @@ class HeatModel:
             # Increment the iteration counter.
             count += 1
 
-            # Check for convergence: if the infinity norm is less than the tolerance 'tol', the method has converged.
-            if infNorm < tol:
-                # Return the solution x1, the number of iterations 'count',
-                # the recorded tolerances up to the current count, and the errors.
-                return x1, count, tols[:, :count], errors
+            if stop:
+                # Check for convergence: if the infinity norm is less than the tolerance 'tol', the method has converged.
+                if infNorm < tol:
+                    # Return the solution x1, the number of iterations 'count',
+                    # the recorded tolerances up to the current count, and the errors.
+                    return x1, count, tols[:, :count], errors
 
             # Update x for the next iteration.
             x = x1.copy()
