@@ -18,10 +18,10 @@ class HeatModel:
     def __init__(self, size):
         self.size = size
 
-        self.designMatrix = self.create_Model().tocsr()
+        self.designMatrix = self.create_Model()
 
         self.b = self.constructVectorB()
- 
+
     def create_diagonal_matrix(self, diagonalElement, offDiagonalElement):
         """
 
@@ -126,12 +126,12 @@ class HeatModel:
         finalMatrix.setdiag(
             np.ones((self.size * self.size) - self.size), -self.size)
 
-        return finalMatrix
+        return finalMatrix.tocsr()
 
     def constructVectorB(self):
         """
-        
-        
+
+
         Returns
         -------
         A vector size n^2 x 1
@@ -152,12 +152,11 @@ class HeatModel:
 
         # Changing the top and bottom row values to -100
         for i in range(self.size):
-            matrix[0,i] = -100
-            matrix[-1,i] = -100
-        
+            matrix[0, i] = -100
+            matrix[-1, i] = -100
+
         # Flattening the matrix into a column vector
-        return matrix.T.flatten().reshape(-1,1)
-        
+        return matrix.T.flatten().reshape(-1, 1)
 
     def visualizeModelDesign(self):
         """
@@ -181,27 +180,27 @@ class HeatModel:
         matrix = self.designMatrix.todense()
 
         # Constructing two subplots for the final plot
-        fig, (ax, ax_bar) = plt.subplots(figsize = (12,8),
-                                         ncols = 2,
-                                         constrained_layout = True, 
-                                         gridspec_kw = {"width_ratios": [0.8,0.2]})
-        
+        fig, (ax, ax_bar) = plt.subplots(figsize=(12, 8),
+                                         ncols=2,
+                                         constrained_layout=True,
+                                         gridspec_kw={"width_ratios": [0.8, 0.2]})
+
         # Creating a heatmap of the design matrix
-        sns.heatmap(matrix, ax = ax)
+        sns.heatmap(matrix, ax=ax)
         ax.set_title("Design Matrix")
 
         # Creating a visual representation of the vector b
-        sns.heatmap(self.b, ax = ax_bar)
+        sns.heatmap(self.b, ax=ax_bar)
         ax_bar.set_title("Vector b")
 
         # Adding a title to the figure
         fig.suptitle("Visual Representation of Design Matrix and Vector b",
-                     fontsize = "xx-large")
+                     fontsize="xx-large")
 
         return fig
 
-    def GaussSeidel(self, nIter = 100, tol = 1e-8, stop = True):
-        
+    def GaussSeidel(self, nIter=100, tol=1e-8, stop=True):
+
         # Starting with an initial vector of ones
         x = np.ones(self.size**2)
         # Creating a copy for future iterations
@@ -212,10 +211,10 @@ class HeatModel:
 
         # Storing the Diagonals in A for easier access later
         diags = A.diagonal()
-        
+
         # Initializing a counter and a loss array
         count = 0
-        tols = np.zeros((2,nIter))
+        tols = np.zeros((2, nIter))
 
         # Beginning outer loop of nIters
         for i in range(nIter):
@@ -229,21 +228,22 @@ class HeatModel:
                 Ajx = A.data[rowstart:rowend] @ x[A.indices[rowstart:rowend]]
 
                 # Generating each element for x_k+1
-                x1[j] = x[j] + ( (b[j] - Ajx) / diags[j] )
+                x1[j] = x[j] + ((b[j] - Ajx) / diags[j])
 
-            # Calculating the difference between the prior and current approximation 
+            # Calculating the difference between the prior and current approximation
             x_x1 = x1 - x
 
             # Calculating and appending the normalized max norm
-            infNorm = np.linalg.norm(x_x1, ord = np.inf) / np.linalg.norm(x1, ord = np.inf)
-            tols[0,i] = infNorm
+            infNorm = np.linalg.norm(x_x1, ord=np.inf) / \
+                np.linalg.norm(x1, ord=np.inf)
+            tols[0, i] = infNorm
 
             # Calculating and appending the normalized l2 norm
             l2Norm = np.linalg.norm(x_x1) / np.linalg.norm(x1)
-            tols[1,i] = l2Norm
+            tols[1, i] = l2Norm
 
             # Incrementing count
-            count +=1
+            count += 1
 
             # Copying the current into the prior for the next iteration
             x = np.copy(x1)
