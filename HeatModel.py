@@ -3,7 +3,7 @@
 """
 Created on Sat Oct 26 10:28:29 2024
 
-@author: ramsonmunoz
+@authors: ramsonmunoz
 """
 
 from scipy import sparse
@@ -15,13 +15,19 @@ import seaborn as sns
 
 class HeatModel:
 
-    def __init__(self, size):
+    def __init__(self, size, tempTop = 0, tempBot = 0, tempRight = 100, tempLeft = 100):
+        
+        # Initial Variables from Constructor
         self.size = size
-
-        self.designMatrix = self.create_Model().tocsr()
-
+        self.tempTop = tempTop
+        self.tempBot = tempBot
+        self.tempRight = tempRight
+        self.tempLeft = tempLeft
+        
+        # Constructor Function Calls
+        self.designMatrix = self.create_Model()
         self.b = self.constructVectorB()
- 
+
     def create_diagonal_matrix(self, diagonalElement, offDiagonalElement):
         """
 
@@ -126,12 +132,12 @@ class HeatModel:
         finalMatrix.setdiag(
             np.ones((self.size * self.size) - self.size), -self.size)
 
-        return finalMatrix
+        return finalMatrix.tocsr()
 
     def constructVectorB(self):
         """
-        
-        
+
+
         Returns
         -------
         A vector size n^2 x 1
@@ -150,14 +156,22 @@ class HeatModel:
         # Constructing a matrix of zeros size n x n
         matrix = np.zeros((self.size, self.size))
 
-        # Changing the top and bottom row values to -100
+        # Changing the top and bottom row values to -1*tempLeft and -1*tempRight
         for i in range(self.size):
-            matrix[0,i] = -100
-            matrix[-1,i] = -100
-        
+            matrix[0, i] = -1*self.tempLeft
+            matrix[-1, i] = -1*self.tempRight
+
+            # If the first row hasn't been set by top and bottom, change it.
+            # This gives priority to the left and right setters for this matrix.
+            if matrix[i, 0] == 0:
+                matrix[i, 0] = -1*self.tempTop
+            
+            # Repeated for right
+            if matrix[i, -1] == 0:
+                matrix[i, -1] = -1*self.tempBot
+
         # Flattening the matrix into a column vector
-        return matrix.T.flatten().reshape(-1,1)
-        
+        return matrix.T.flatten().reshape(-1, 1)
 
     def visualizeModelDesign(self):
         """
@@ -181,27 +195,39 @@ class HeatModel:
         matrix = self.designMatrix.todense()
 
         # Constructing two subplots for the final plot
-        fig, (ax, ax_bar) = plt.subplots(figsize = (12,8),
-                                         ncols = 2,
-                                         constrained_layout = True, 
-                                         gridspec_kw = {"width_ratios": [0.8,0.2]})
-        
+        fig, (ax, ax_bar) = plt.subplots(figsize=(12, 8),
+                                         ncols=2,
+                                         constrained_layout=True,
+                                         gridspec_kw={"width_ratios": [0.8, 0.2]})
+
         # Creating a heatmap of the design matrix
-        sns.heatmap(matrix, ax = ax)
+        sns.heatmap(matrix, ax=ax)
         ax.set_title("Design Matrix")
 
         # Creating a visual representation of the vector b
-        sns.heatmap(self.b, ax = ax_bar)
+        sns.heatmap(self.b, ax=ax_bar)
         ax_bar.set_title("Vector b")
 
         # Adding a title to the figure
         fig.suptitle("Visual Representation of Design Matrix and Vector b",
-                     fontsize = "xx-large")
+                     fontsize="xx-large")
 
-        return fig
+    def GaussSeidel(self, nIter=100, tol=1e-8, stop=True, plot=False):
+        """
+        Solves the linear system Ax = b using the Gauss Seidel iterative method.
 
-    def GaussSeidel(self, nIter = 100, tol = 1e-8, stop = True):
-        
+        Parameters:
+        - nIter (int): Maximum number of iterations allowed.
+        - tol (float): Convergence tolerance for the iterative method.
+        - stop (boolean): True allows the method to end if tolerance is reached
+        - plot (boolean): True will plot the padded solution matrix once solved
+
+        Returns:
+        - x1 (np.array): The solution vector after convergence or maximum iterations.
+        - count (int): The number of iterations performed.
+        - tols (np.array): Recorded tolerance values for each iteration 
+            (0: Infinity norm, 1: L2 norm).
+        """
         # Starting with an initial vector of ones
         x = np.ones(self.size**2)
         # Creating a copy for future iterations
@@ -212,10 +238,10 @@ class HeatModel:
 
         # Storing the Diagonals in A for easier access later
         diags = A.diagonal()
-        
+
         # Initializing a counter and a loss array
         count = 0
-        tols = np.zeros((2,nIter))
+        tols = np.zeros((2, nIter))
 
         # Beginning outer loop of nIters
         for i in range(nIter):
@@ -229,21 +255,22 @@ class HeatModel:
                 Ajx = A.data[rowstart:rowend] @ x[A.indices[rowstart:rowend]]
 
                 # Generating each element for x_k+1
-                x1[j] = x[j] + ( (b[j] - Ajx) / diags[j] )
+                x1[j] = x[j] + ((b[j] - Ajx) / diags[j])
 
-            # Calculating the difference between the prior and current approximation 
+            # Calculating the difference between the prior and current approximation
             x_x1 = x1 - x
 
             # Calculating and appending the normalized max norm
-            infNorm = np.linalg.norm(x_x1, ord = np.inf) / np.linalg.norm(x1, ord = np.inf)
-            tols[0,i] = infNorm
+            infNorm = np.linalg.norm(x_x1, ord=np.inf) / \
+                np.linalg.norm(x1, ord=np.inf)
+            tols[0, i] = infNorm
 
             # Calculating and appending the normalized l2 norm
             l2Norm = np.linalg.norm(x_x1) / np.linalg.norm(x1)
-            tols[1,i] = l2Norm
+            tols[1, i] = l2Norm
 
             # Incrementing count
-            count +=1
+            count += 1
 
             # Copying the current into the prior for the next iteration
             x = np.copy(x1)
@@ -252,21 +279,27 @@ class HeatModel:
                 if infNorm < tol:
                     break
 
-        return x1, count, tols
+        if plot:
+            self.visualizeHeatDistribution(x1)
 
-    def solveJacobi(self, tol=1e-8, maxiter=100, stop = True):
+        return x1, count, tols[:,:count]
+
+ 
+    def solveJacobi(self, nIter = 100, tol=1e-8, stop=True, plot=False):
         """
         Solves the linear system Ax = b using the Jacobi iterative method.
 
         Parameters:
+        - nIter (int): Maximum number of iterations allowed.
         - tol (float): Convergence tolerance for the iterative method.
-        - maxiter (int): Maximum number of iterations allowed.
+        - stop (boolean): True allows the method to end if tolerance is reached
+        - plot (boolean): True will plot the padded solution matrix once solved
 
         Returns:
         - x1 (np.array): The solution vector after convergence or maximum iterations.
         - count (int): The number of iterations performed.
-        - tols (np.array): Recorded tolerance values for each iteration (infinity norm and L2 norm).
-        - errors (list): Residual errors at each iteration.
+        - tols (np.array): Recorded tolerance values for each iteration 
+            (0: Ax - b Error, 1: Infinity norm, 2: L2 norm).
         """
         # Retrieve the system matrix A representing coefficients in Ax = b.
         A = self.designMatrix
@@ -284,15 +317,13 @@ class HeatModel:
         # This will be used to isolate x in the iteration formula.
         inv_diag = 1.0 / diag
 
-        # Initialize a list to store the residual errors at each iteration.
-        errors = []
-        # Initialize an array to store the convergence tolerances (infinity norm and L2 norm) for each iteration.
-        tols = np.zeros((2, maxiter))
+        # Initialize an array to store the convergence tolerances (error, infinity norm and L2 norm) for each iteration.
+        tols = np.zeros((3, nIter))
         # Initialize the iteration counter.
         count = 0
 
         # Begin the iterative process for up to 'maxiter' iterations.
-        for i in range(maxiter):
+        for i in range(nIter):
             # Compute the matrix-vector product A * x, where x is the current approximation.
             Ax = A @ x
             # Update the solution vector x using the Jacobi iteration formula:
@@ -303,7 +334,7 @@ class HeatModel:
             # This represents how close the current solution is to satisfying the system Ax = b.
             error = np.linalg.norm(A.dot(x) - b, ord=np.inf)
             # Record the residual error for this iteration.
-            errors.append(error)
+            tols[0,i] = error
 
             # Compute the difference between the new and previous solution vectors.
             x1_x = x1 - x
@@ -313,13 +344,13 @@ class HeatModel:
             # The small epsilon (1e-10) prevents division by zero.
             infNorm = np.linalg.norm(x1_x, ord=np.inf) / (np.linalg.norm(x1, ord=np.inf) + 1e-10)
             # Store the infinity norm in the 'tols' array for convergence analysis.
-            tols[0, i] = infNorm
+            tols[1, i] = infNorm
 
             # Calculate the normalized L2 norm of the difference between iterations.
             # This provides an overall measure of convergence across all variables.
             l2Norm = np.linalg.norm(x1_x) / (np.linalg.norm(x1) + 1e-10)
             # Store the L2 norm in the 'tols' array.
-            tols[1, i] = l2Norm
+            tols[2, i] = l2Norm
 
             # Increment the iteration counter.
             count += 1
@@ -327,29 +358,26 @@ class HeatModel:
             if stop:
                 # Check for convergence: if the infinity norm is less than the tolerance 'tol', the method has converged.
                 if infNorm < tol:
-                    # Return the solution x1, the number of iterations 'count',
-                    # the recorded tolerances up to the current count, and the errors.
-                    return x1, count, tols[:, :count], errors
+                    break
 
             # Update x for the next iteration.
             x = x1.copy()
 
+        if plot:
+            self.visualizeHeatDistribution(x1)
+        
         # If convergence was not achieved within 'maxiter' iterations,
         # return the last computed solution and associated iterCOUNT and tolerances.
-        return x1, count, tols[:, :count], errors
+        return x1, count, tols[:, :count]
 
-    def visualizeHeatDistribution(self, U, title='Heat Distribution', initempTop=0, initempBottom=0, initempLeft=100,
-                                    initempRight=100):
+    def visualizeHeatDistribution(self, U, title='Heat Distribution', pad_width = 1):
         """
         Visualizes the heat distribution as a heatmap.
 
         Parameters:
         - U (np.array): The solution vector representing the heat values at each grid point.
         - title (str): Title of the heatmap plot.
-        - initempTop (float): Temperature at the top boundary.
-        - initempBottom (float): Temperature at the bottom boundary.
-        - initempLeft (float): Temperature at the left boundary.
-        - initempRight (float): Temperature at the right boundary.
+        - pad_width (int): Size of padding for plot.
         """
 
         # Retrieve the grid size (number of points along one axis).
@@ -357,22 +385,13 @@ class HeatModel:
         # Reshape the solution vector U into a 2D matrix representing the grid.
         result_matrix = U.reshape((n, n))
 
-        # Set the padding width to 1 to represent the boundaries around the grid.
-        pad_width = 1
-
-        # Boundary temperatures for padding the grid.
-        top_pad = initempTop  # Temperature at the top boundary.
-        bottom_pad = initempBottom  # Temperature at the bottom boundary.
-        left_pad = initempLeft  # Temperature at the left boundary.
-        right_pad = initempRight  # Temperature at the right boundary.
-
         # Apply padding to the grid with the specified boundary temperatures.
         # This adds a border around 'result_matrix' representing the fixed temperatures at the boundaries.
         result_padded = np.pad(
             result_matrix,
             pad_width = pad_width,
             mode='constant',
-            constant_values=((top_pad, bottom_pad), (left_pad, right_pad))
+            constant_values=((self.tempTop, self.tempBot), (self.tempLeft, self.tempRight))
         )
         # Create a new figure for the plot with specified size.
         plt.figure(figsize=(10, 8))
