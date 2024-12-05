@@ -212,7 +212,7 @@ class HeatModel:
         fig.suptitle("Visual Representation of Design Matrix and Vector b",
                      fontsize="xx-large")
 
-    def GaussSeidel(self, nIter=100, tol=1e-8, stop=True, plot=False):
+    def GaussSeidel(self, nIter=100, tol=1e-8, stop=True, plot=False, x0=1):
         """
         Solves the linear system Ax = b using the Gauss Seidel iterative method.
 
@@ -229,7 +229,7 @@ class HeatModel:
             (0: Infinity norm, 1: L2 norm).
         """
         # Starting with an initial vector of ones
-        x = np.ones(self.size**2)
+        x = np.ones(self.size**2) * x0
         # Creating a copy for future iterations
         x1 = np.copy(x)
         # Storing the design matrix and vector b from the class constructor
@@ -285,7 +285,7 @@ class HeatModel:
         return x1, count, tols[:,:count]
 
  
-    def solveJacobi(self, nIter = 100, tol=1e-8, stop=True, plot=False):
+    def solveJacobi(self, nIter = 100, tol=1e-8, stop=True, plot=False, x0=1):
         """
         Solves the linear system Ax = b using the Jacobi iterative method.
 
@@ -309,7 +309,7 @@ class HeatModel:
         n = len(b)
         # Initialize the solution vector x with zeros as the initial guess.
         # In the Jacobi method, the initial guess can be any vector; zeros are commonly used.
-        x = np.zeros(n)
+        x = np.ones(n) * x0
 
         # Extract the diagonal elements of matrix A.
         diag = A.diagonal()
