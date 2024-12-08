@@ -322,7 +322,7 @@ class HeatModel:
         # Initialize the iteration counter.
         count = 0
 
-        # Begin the iterative process for up to 'maxiter' iterations.
+        # Begin the iterative process for up to 'nIter' iterations.
         for i in range(nIter):
             # Compute the matrix-vector product A * x, where x is the current approximation.
             Ax = A @ x
