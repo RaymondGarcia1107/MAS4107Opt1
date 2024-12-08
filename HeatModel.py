@@ -248,10 +248,14 @@ class HeatModel:
 
             # Inner loop to generate x_k+1
             for j in range(x.shape[0]):
+
+                # Storing the previous entries to a new vector
+                x[:j] = x1[:j]
+
                 # Slicing through the sparse matrix for non zero values
                 rowstart = A.indptr[j]
                 rowend = A.indptr[j+1]
-                # Taking A[j].T @ x
+                # Taking A[j].T @ x with the mixed vector x
                 Ajx = A.data[rowstart:rowend] @ x[A.indices[rowstart:rowend]]
 
                 # Generating each element for x_k+1
@@ -308,7 +312,7 @@ class HeatModel:
         # Determine the number of variables/equations in the system.
         n = len(b)
         # Initialize the solution vector x with zeros as the initial guess.
-        # In the Jacobi method, the initial guess can be any vector; zeros are commonly used.
+        # In the Jacobi method, the initial guess can be any vector
         x = np.ones(n) * x0
 
         # Extract the diagonal elements of matrix A.
@@ -327,7 +331,6 @@ class HeatModel:
             # Compute the matrix-vector product A * x, where x is the current approximation.
             Ax = A @ x
             # Update the solution vector x using the Jacobi iteration formula:
-            # x_new = x + D^-1 * (b - A * x)
             x1 = x + inv_diag * (b - Ax)
 
             # Calculate the residual error as the infinity norm of (A * x1 - b).
